@@ -35,22 +35,23 @@ void LcdDisplay::print(const TimingConfiguration& config)
     lcd.print("Hz  ");
 
     lcd.print(config.carrierFrequencyMicroseconds);
-    lcd.print("\%s ");
+    lcd.print("% ");
 
-    lcd.print(config.pulsesPerCycle);
+    char buffer[4];
+    snprintf(buffer, sizeof(buffer), "%03d", config.pulsesPerCycle);
+    lcd.print(buffer);
     lcd.print("P");
     
     lcd.setCursor(0, 1);
 
-    char buffer[4];
     snprintf(buffer, sizeof(buffer), "%03d", config.interPeakDelayMicroseconds);
     lcd.print(buffer);
-    lcd.print("\%s ");
+    lcd.print("% ");
     
     lcd.print(config.symmetry);
     lcd.print(" ");
 
-    lcd.print(config.groupDelayMilliseconds);
+    snprintf(buffer, sizeof(buffer), "%02.1f", static_cast<double>(config.groupDelayMilliseconds));
     lcd.print("ms ");
 
     lcd.print("MD");
