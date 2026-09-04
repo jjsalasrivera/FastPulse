@@ -18,6 +18,29 @@ The project demonstrates how to use hardware-level register access to:
 
 ## Arduino Mega 2560 port mapping
 
+The following table maps each digital pin to its corresponding AVR port and bit:
+
+| Digital pin | AVR port | Digital pin | AVR port | Digital pin | AVR port |
+| ---: | :--- | ---: | :--- | ---: | :--- |
+| 0 | PE0 | 18 | PD3 | 36 | PC1 |
+| 1 | PE1 | 19 | PD2 | 37 | PC0 |
+| 2 | PE4 | 20 | PD1 | 38 | PD7 |
+| 3 | PE5 | 21 | PD0 | 39 | PG2 |
+| 4 | PG5 | 22 | PA0 | 40 | PG1 |
+| 5 | PE3 | 23 | PA1 | 41 | PG0 |
+| 6 | PH3 | 24 | PA2 | 42 | PL7 |
+| 7 | PH4 | 25 | PA3 | 43 | PL6 |
+| 8 | PH5 | 26 | PA4 | 44 | PL5 |
+| 9 | PH6 | 27 | PA5 | 45 | PL4 |
+| 10 | PB4 | 28 | PA6 | 46 | PL3 |
+| 11 | PB5 | 29 | PA7 | 47 | PL2 |
+| 12 | PB6 | 30 | PC7 | 48 | PL1 |
+| 13 | PB7 | 31 | PC6 | 49 | PL0 |
+| 14 | PJ1 | 32 | PC5 | 50 | PB3 (MISO) |
+| 15 | PJ0 | 33 | PC4 | 51 | PB2 (MOSI) |
+| 16 | PH1 | 34 | PC3 | 52 | PB1 (SCK) |
+| 17 | PH0 | 35 | PC2 | 53 | PB0 (SS) |
+
 The following pins are configured using direct register access for faster operation:
 
 ### Digital 10 => PB4
