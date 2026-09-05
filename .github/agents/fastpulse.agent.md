@@ -26,11 +26,14 @@ Usa primero este comando desde la raiz del proyecto:
 platformio run --environment megaatmega2560
 ```
 
-En este equipo, si `platformio` no esta en el `PATH`, usa:
+Si `platformio` no esta en el `PATH`, prueba estas rutas en orden:
 
 ```sh
 ~/.platformio/penv/bin/platformio run --environment megaatmega2560
+~/.platformio/penv/bin/pio run --environment megaatmega2560
 ```
+
+El resultado valido es `SUCCESS`. No uses solo `pio run` si hay varios entornos; especifica siempre `--environment megaatmega2560`.
 
 Despues de cualquier edicion de codigo, compila de nuevo. Muestra el error concreto de PlatformIO, corrige solo la causa relevante y repite la compilacion. No declares que el trabajo esta terminado hasta obtener `SUCCESS` o explicar claramente el bloqueo.
 
@@ -68,7 +71,7 @@ Los pines 0 y 1 pertenecen a `Serial0` y tambien se conectan al USB de la Mega. 
 1. Lee el archivo y la funcion directamente relacionada con la solicitud.
 2. Formula una hipotesis local y un chequeo barato que pueda refutarla.
 3. Aplica el cambio minimo que pruebe la hipotesis.
-4. Ejecuta `~/.platformio/penv/bin/platformio run --environment megaatmega2560` si el comando normal no esta disponible.
+4. Ejecuta `~/.platformio/penv/bin/platformio run --environment megaatmega2560` o `~/.platformio/penv/bin/pio run --environment megaatmega2560` si el comando normal no esta disponible.
 5. Corrige errores de compilacion reales antes de investigar mejoras adicionales.
 6. Revisa riesgos de hardware: UART0 en pines 0/1, registros compartidos, polaridad, tiempos y salidas activas.
 7. Resume cambios, resultado de compilacion y cualquier riesgo pendiente.

@@ -5,27 +5,26 @@
 LcdDisplay lcd;
 TimingConfiguration config;
 
-// Pines 0, 1, 2 y 3
+// Pines 6, 7, 8 y 9 (PH3, PH4, PH5 y PH6) para el grupo 1
 constexpr PulseOutputGroup group1{
-    {&DDRE, &PORTE, B00010001}, // Pines 0 y 2 (PE0 y PE4)
-    {&DDRE, &PORTE, B00100010}  // Pines 1 y 3 (PE1 y PE5)
-};
-
-constexpr PulseOutputGroup group2{
     {&DDRH, &PORTH, B00101000}, // Pines 6 y 8 (PH3 y PH5)
     {&DDRH, &PORTH, B01010000}  // Pines 7 y 9 (PH4 y PH6)
 };
 
-inline void activatePin(const PulseOutputPin& pin) {
-    *pin.outputRegister |= pin.bitMask;
-}
+// pines 10, 11, 12 y 13 (PB4, PB5, PB6 y PB7) para el grupo 2
+constexpr PulseOutputGroup group2{
+    {&DDRB, &PORTB, B01010000}, // Pines 10 y 12 (PB4 y PB6)
+    {&DDRB, &PORTB, B10100000}  // Pines 11 y 13 (PB5 y PB7)
+};
 
-inline void deactivatePin(const PulseOutputPin& pin) {
-    *pin.outputRegister &= static_cast<unsigned char>(~pin.bitMask);
-}
+inline void activatePin(const PulseOutputPin& pin);
+inline void deactivatePin(const PulseOutputPin& pin);
+inline void runGroup(const PulseOutputGroup& group);
+inline void runSynchronizedGroups();
 
 void setup() 
 {
+    int d = PORTH;
     pinMode(LED_BUILTIN, OUTPUT);
     lcd.initialize();
  
@@ -38,42 +37,80 @@ void setup()
     
     lcd.print(config);
 
-    //pinMode(LOGIC_IN1, OUTPUT);
-    //pinMode(LOGIC_IN2, OUTPUT); 
-    //DDRB = B00010000; // Pin 10
-    //DDRH = B01000000; // Pin 9
-    pinMode(0, OUTPUT);
-    pinMode(1, OUTPUT);
-    pinMode(2, OUTPUT);
-    pinMode(3, OUTPUT);
-    pinMode(6, OUTPUT);
-    pinMode(7, OUTPUT);
-    pinMode(8, OUTPUT);
-    pinMode(9, OUTPUT);
+    *group1.positive.directionRegister |= group1.positive.bitMask;
+    *group1.negative.directionRegister |= group1.negative.bitMask;
+
+    *group2.positive.directionRegister |= group2.positive.bitMask;
+    *group2.negative.directionRegister |= group2.negative.bitMask;
 }
+
 void loop() 
 {
-    //for (int i=0; i<burst; i++) {
+    if (config.symmetry == kSymmetryS)
+    {
+        runSynchronizedGroups();
+        delay(1000 / config.frequencyHz);
+        return;
+    }
+
+    runGroup(group1);
+    delayMicroseconds(config.groupDelayMilliseconds * 1000);
+
+    const unsigned long group2StartMicroseconds = micros();
+    runGroup(group2);
+
+    const unsigned long group2DurationMicroseconds = micros() - group2StartMicroseconds;
+    const unsigned long periodMicroseconds = 1000000UL / config.frequencyHz;
+
+    if (group2DurationMicroseconds < periodMicroseconds)
+        delayMicroseconds(periodMicroseconds - group2DurationMicroseconds);
+}
+
+inline void activatePin(const PulseOutputPin& pin) {
+    *pin.outputRegister |= pin.bitMask;
+}
+
+inline void deactivatePin(const PulseOutputPin& pin) {
+    *pin.outputRegister &= static_cast<unsigned char>(~pin.bitMask);
+}
+
+inline void runGroup(const PulseOutputGroup& group) 
+{
     for (unsigned int i = 0; i < config.pulsesPerCycle; ++i) 
     {
-        // positive phase
-        activatePin(group1.positive);
-        deactivatePin(group1.negative);
+        activatePin(group.positive);
+        deactivatePin(group.negative);
         delayMicroseconds(config.interPeakDelayMicroseconds);
 
-        // negetive phase
-        deactivatePin(group1.positive);
-        activatePin(group1.negative);
-        //delayMicroseconds(50);
+        deactivatePin(group.positive);
+        activatePin(group.negative);
         delayMicroseconds(config.interPeakDelayMicroseconds);
     }
 
-    // stimulation delay
-    //digitalWrite(LOGIC_IN1, LOW);    
-    //digitalWrite(LOGIC_IN2, LOW);
+    deactivatePin(group.positive);
+    deactivatePin(group.negative);
+}
+
+inline void runSynchronizedGroups()
+{
+    for (unsigned int i = 0; i < config.pulsesPerCycle; ++i) 
+    {
+        activatePin(group1.positive);
+        deactivatePin(group1.negative);
+        activatePin(group2.positive);
+        deactivatePin(group2.negative);
+        
+        delayMicroseconds(config.interPeakDelayMicroseconds);
+
+        deactivatePin(group1.positive);
+        activatePin(group1.negative);
+        deactivatePin(group2.positive);
+        activatePin(group2.negative);
+        delayMicroseconds(config.interPeakDelayMicroseconds);
+    }
+
     deactivatePin(group1.positive);
     deactivatePin(group1.negative);
-
-    delay(1000/config.frequencyHz);
-
+    deactivatePin(group2.positive);
+    deactivatePin(group2.negative);
 }

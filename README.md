@@ -41,29 +41,31 @@ The following table maps each digital pin to its corresponding AVR port and bit:
 | 16 | PH1 | 34 | PC3 | 52 | PB1 (SCK) |
 | 17 | PH0 | 35 | PC2 | 53 | PB0 (SS) |
 
-The following pins are configured using direct register access for faster operation:
+## Pulse output groups
 
-### Digital 10 => PB4
+The pulse outputs use two pins per phase. Each mask is written directly to the
+corresponding AVR port, so unrelated port bits are preserved by the firmware.
+
+| Group | Phase | Digital pins | AVR bits | Direction register | Output register |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | Positive | 0 and 2 | `PE0` and `PE4` | `DDRE` | `PORTE` |
+| 1 | Negative | 1 and 3 | `PE1` and `PE5` | `DDRE` | `PORTE` |
+| 2 | Positive | 6 and 8 | `PH3` and `PH5` | `DDRH` | `PORTH` |
+| 2 | Negative | 7 and 9 | `PH4` and `PH6` | `DDRH` | `PORTH` |
+
+The masks for the active groups are:
 
 ```cpp
-DDRB = B00111111;  // faster pinMode operation
-PORTB = B00010000; // faster digitalWrite operation
+// Group 1: pins 0/2 and 1/3
+{B00010001, B00100010}
+
+// Group 2: pins 6/8 and 7/9
+{B00101000, B01010000}
 ```
 
-- `DIG 10` maps to `PB4`
-- `DDRB` configures the data direction register
-- `PORTB` writes the output value directly to the port register
-
-### Digital 9 => PH6
-
-```cpp
-DDRH = B01000000;  // faster pinMode operation
-PORTH = B01000000; // faster digitalWrite operation
-```
-
-- `DIG 9` maps to `PH6`
-- `DDRH` configures the pin direction
-- `PORTH` writes the output state directly to the port register
+Pins 0 and 1 are `Serial0` RX/TX and are also connected to the Mega USB
+interface. Do not use them for pulse output together with USB serial
+communication or serial debugging.
 
 ## Notes
 
