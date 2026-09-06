@@ -24,8 +24,6 @@ inline void runSynchronizedGroups();
 
 void setup() 
 {
-    int d = PORTH;
-    pinMode(LED_BUILTIN, OUTPUT);
     lcd.initialize();
  
     config.frequencyHz = 30;
@@ -76,15 +74,19 @@ inline void deactivatePin(const PulseOutputPin& pin) {
 
 inline void runGroup(const PulseOutputGroup& group) 
 {
+    int delayMicrosecondsValue = (config.carrierFrequencyMicroseconds - (2 * config.interPeakDelayMicroseconds)) / 2;
+    
     for (unsigned int i = 0; i < config.pulsesPerCycle; ++i) 
     {
-        activatePin(group.positive);
         deactivatePin(group.negative);
-        delayMicroseconds(config.interPeakDelayMicroseconds);
+        activatePin(group.positive);
+        delayMicroseconds(delayMicrosecondsValue);
 
         deactivatePin(group.positive);
-        activatePin(group.negative);
         delayMicroseconds(config.interPeakDelayMicroseconds);
+
+        activatePin(group.negative);
+        delayMicroseconds(delayMicrosecondsValue);
     }
 
     deactivatePin(group.positive);
@@ -93,20 +95,24 @@ inline void runGroup(const PulseOutputGroup& group)
 
 inline void runSynchronizedGroups()
 {
+    int delayMicrosecondsValue = (config.carrierFrequencyMicroseconds - (2 * config.interPeakDelayMicroseconds)) / 2;
+
     for (unsigned int i = 0; i < config.pulsesPerCycle; ++i) 
     {
-        activatePin(group1.positive);
-        deactivatePin(group1.negative);
-        activatePin(group2.positive);
+        deactivatePin(group1.negative); 
         deactivatePin(group2.negative);
-        
-        delayMicroseconds(config.interPeakDelayMicroseconds);
+        activatePin(group1.positive);
+        activatePin(group2.positive);
+   
+        delayMicroseconds(delayMicrosecondsValue);
 
         deactivatePin(group1.positive);
-        activatePin(group1.negative);
         deactivatePin(group2.positive);
-        activatePin(group2.negative);
         delayMicroseconds(config.interPeakDelayMicroseconds);
+
+        activatePin(group1.negative);
+        activatePin(group2.negative);
+        delayMicroseconds(delayMicrosecondsValue);
     }
 
     deactivatePin(group1.positive);
