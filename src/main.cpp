@@ -1,9 +1,17 @@
 #include <Arduino.h>
+#include <Keypad.h>
 #include "lcd_display.h"
 #include "types.h"
 
 LcdDisplay lcd;
 TimingConfiguration config;
+
+constexpr byte keypadRows = 1;
+constexpr byte keypadColumns = 5;
+char keypadKeys[keypadRows][keypadColumns] = {{'N', 'B', 'I', 'D', 'S'}};
+byte keypadRowPins[keypadRows] = {35};
+byte keypadColumnPins[keypadColumns] = {30, 31, 32, 33, 34};
+Keypad keypad = Keypad(makeKeymap(keypadKeys), keypadRowPins, keypadColumnPins, keypadRows, keypadColumns);
 
 // Pines 6, 7, 8 y 9 (PH3, PH4, PH5 y PH6) para el grupo 1
 constexpr PulseOutputGroup group1{
@@ -21,9 +29,11 @@ inline void activatePin(const PulseOutputPin& pin);
 inline void deactivatePin(const PulseOutputPin& pin);
 inline void runGroup(const PulseOutputGroup& group);
 inline void runSynchronizedGroups();
+inline void handleKey(char key);
 
 void setup() 
 {
+    Serial.begin(115200);
     lcd.initialize();
  
     config.frequencyHz = 30;
@@ -44,6 +54,10 @@ void setup()
 
 void loop() 
 {
+    const char key = keypad.getKey();
+    if (key != NO_KEY)
+        handleKey(key);
+
     if (config.symmetry == kSymmetryS)
     {
         runSynchronizedGroups();
@@ -62,6 +76,30 @@ void loop()
 
     if (group2DurationMicroseconds < periodMicroseconds)
         delayMicroseconds(periodMicroseconds - group2DurationMicroseconds);
+}
+
+inline void handleKey(char key)
+{
+    switch (key)
+    {
+        case 'N':
+            Serial.println("NEXT");
+            break;
+        case 'B':
+            Serial.println("BEFORE");
+            break;
+        case 'I':
+            Serial.println("INC");
+            break;
+        case 'D':
+            Serial.println("DEC");
+            break;
+        case 'S':
+            Serial.println("SEL");
+            break;
+        default:
+            break;
+    }
 }
 
 inline void activatePin(const PulseOutputPin& pin) {
