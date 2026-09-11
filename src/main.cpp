@@ -1,35 +1,12 @@
 #include <Arduino.h>
-#include <Keypad.h>
+#include "configuration_menu.h"
 #include "lcd_display.h"
+#include "keypad_config.h"
+#include "pulse_outputs.h"
 #include "types.h"
 
 LcdDisplay lcd;
 TimingConfiguration config;
-
-constexpr byte keypadRows = 1;
-constexpr byte keypadColumns = 5;
-char keypadKeys[keypadRows][keypadColumns] = {{'N', 'B', 'I', 'D', 'S'}};
-byte keypadRowPins[keypadRows] = {35};
-byte keypadColumnPins[keypadColumns] = {30, 31, 32, 33, 34};
-Keypad keypad = Keypad(makeKeymap(keypadKeys), keypadRowPins, keypadColumnPins, keypadRows, keypadColumns);
-
-// Pines 6, 7, 8 y 9 (PH3, PH4, PH5 y PH6) para el grupo 1
-constexpr PulseOutputGroup group1{
-    {&DDRH, &PORTH, B00101000}, // Pines 6 y 8 (PH3 y PH5)
-    {&DDRH, &PORTH, B01010000}  // Pines 7 y 9 (PH4 y PH6)
-};
-
-// pines 10, 11, 12 y 13 (PB4, PB5, PB6 y PB7) para el grupo 2
-constexpr PulseOutputGroup group2{
-    {&DDRB, &PORTB, B01010000}, // Pines 10 y 12 (PB4 y PB6)
-    {&DDRB, &PORTB, B10100000}  // Pines 11 y 13 (PB5 y PB7)
-};
-
-inline void activatePin(const PulseOutputPin& pin);
-inline void deactivatePin(const PulseOutputPin& pin);
-inline void runGroup(const PulseOutputGroup& group);
-inline void runSynchronizedGroups();
-inline void handleKey(char key);
 
 void setup() 
 {
@@ -45,116 +22,14 @@ void setup()
     
     lcd.print(config);
 
-    *group1.positive.directionRegister |= group1.positive.bitMask;
-    *group1.negative.directionRegister |= group1.negative.bitMask;
-
-    *group2.positive.directionRegister |= group2.positive.bitMask;
-    *group2.negative.directionRegister |= group2.negative.bitMask;
+    initializePulseOutputs();
 }
 
 void loop() 
 {
-    const char key = keypad.getKey();
-    if (key != NO_KEY)
-        handleKey(key);
+    const char key = readKeypadKey();
+    if (key != kNoKey)
+        handleKey(key, config, lcd);
 
-    if (config.symmetry == kSymmetryS)
-    {
-        runSynchronizedGroups();
-        delay(1000 / config.frequencyHz);
-        return;
-    }
-
-    runGroup(group1);
-    delayMicroseconds(config.groupDelayMilliseconds * 1000);
-
-    const unsigned long group2StartMicroseconds = micros();
-    runGroup(group2);
-
-    const unsigned long group2DurationMicroseconds = micros() - group2StartMicroseconds;
-    const unsigned long periodMicroseconds = 1000000UL / config.frequencyHz;
-
-    if (group2DurationMicroseconds < periodMicroseconds)
-        delayMicroseconds(periodMicroseconds - group2DurationMicroseconds);
-}
-
-inline void handleKey(char key)
-{
-    switch (key)
-    {
-        case 'N':
-            Serial.println("NEXT");
-            break;
-        case 'B':
-            Serial.println("BEFORE");
-            break;
-        case 'I':
-            Serial.println("INC");
-            break;
-        case 'D':
-            Serial.println("DEC");
-            break;
-        case 'S':
-            Serial.println("SEL");
-            break;
-        default:
-            break;
-    }
-}
-
-inline void activatePin(const PulseOutputPin& pin) {
-    *pin.outputRegister |= pin.bitMask;
-}
-
-inline void deactivatePin(const PulseOutputPin& pin) {
-    *pin.outputRegister &= static_cast<unsigned char>(~pin.bitMask);
-}
-
-inline void runGroup(const PulseOutputGroup& group) 
-{
-    int delayMicrosecondsValue = (config.carrierFrequencyMicroseconds - (2 * config.interPeakDelayMicroseconds)) / 2;
-    
-    for (unsigned int i = 0; i < config.pulsesPerCycle; ++i) 
-    {
-        deactivatePin(group.negative);
-        activatePin(group.positive);
-        delayMicroseconds(delayMicrosecondsValue);
-
-        deactivatePin(group.positive);
-        delayMicroseconds(config.interPeakDelayMicroseconds);
-
-        activatePin(group.negative);
-        delayMicroseconds(delayMicrosecondsValue);
-    }
-
-    deactivatePin(group.positive);
-    deactivatePin(group.negative);
-}
-
-inline void runSynchronizedGroups()
-{
-    int delayMicrosecondsValue = (config.carrierFrequencyMicroseconds - (2 * config.interPeakDelayMicroseconds)) / 2;
-
-    for (unsigned int i = 0; i < config.pulsesPerCycle; ++i) 
-    {
-        deactivatePin(group1.negative); 
-        deactivatePin(group2.negative);
-        activatePin(group1.positive);
-        activatePin(group2.positive);
-   
-        delayMicroseconds(delayMicrosecondsValue);
-
-        deactivatePin(group1.positive);
-        deactivatePin(group2.positive);
-        delayMicroseconds(config.interPeakDelayMicroseconds);
-
-        activatePin(group1.negative);
-        activatePin(group2.negative);
-        delayMicroseconds(delayMicrosecondsValue);
-    }
-
-    deactivatePin(group1.positive);
-    deactivatePin(group1.negative);
-    deactivatePin(group2.positive);
-    deactivatePin(group2.negative);
+    runPulseOutputs(config);
 }
